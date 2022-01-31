@@ -1,36 +1,19 @@
-  --Html.text (Debug.toString (String.toList stringInstruction))
-
-
--- CONVERSION
---getIndexedCharacters : String -> List (Instruction)
---getIndexedCharacters =
-  --indexedMap (",") << toList
-
-
-
-
 module Main exposing (..)
-import Html exposing (text)
-import Html
-import Svg exposing (..)
-import Svg.Attributes exposing (..)
 import Debug
 import Browser
+import Svg exposing (..)
+import Svg.Attributes exposing (..)
 import Html exposing (Html, Attribute, div, input, text, button)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput,onClick)
+import Parser exposing (..)
 
--- PARSER : elm install elm/parser
-import Parser exposing (Parser, (|.), (|=), succeed, symbol, float, spaces, getOffset)
-import List exposing (indexedMap)
-import String exposing (toList)
 
+-------------------------------------------------------------------------------------------------------------------------
+--FONCTIONS QUI TRANSFORMENT LIST INSTRUCTION -> MESSAGE SVG 
 
 -- mon type instruction qui a comme arg (forward left right et repeat)
 type  Instruction = Forward Float | Left Float | Right Float | Repeat Int (List Instruction)
-
---la varaible de type instruction que je met en entré dans le programme
-my_instruction = [Repeat 8 [Left 45, Repeat 6 [Repeat 90 [Forward 1, Left 2], Left 90]]]
 
 --le type Coord_line qui va être utiliser pour transformer 2 tuple(x,y) en une coordonné de ligne 
 -- exemple ma ligne va de (xa,ya) jusqu'à (xb,yb)
@@ -102,47 +85,86 @@ message_svg  list_coord out =
           , y2 yb
           , stroke "red"
           ][]) :: out)
-
-{-
---j'affiche dans le main le dessin svg
-main = 
-  svg
-    [ width "500"
-    , height "500"
-    , viewBox "-250 -250 500 500"
-    ] 
-  (message_svg (List.reverse(convert_List_Coordline (List.reverse(transformer my_instruction [] 0)) (0.0,0.0) [] )) []) 
--}    
-
-
-  --Html.text (Debug.toString (List.reverse(convert_List_Coordline (List.reverse(transformer my_instruction [] 0)) (0.0,0.0) [] )))
-  --Html.text (Debug.toString (List.reverse(transformer my_instruction [] 0)))
-
-
-
-
-{- This is an input module, which emits messages, when user types anything,
-   focuses on it, or when focus leaves the field.
--}
+-------------------------------------------------------------------------------------------------------------------------
 
 
 
 
 
+-------------------------------------------------------------------------------------------------------------------------
+--Parser
+-- on créer un parser pour verifier que la donné d'entrer de mon input est conforme au format type Instruction 
+inst : Parser Instruction
+inst = 
+  oneOf
+  [ succeed Forward 
+    |. token "Forward" 
+    |. spaces 
+    |= float
+  , succeed Left  
+    |. token "Left" 
+    |. spaces 
+    |= float
+  , succeed Right  
+    |. token "Right" 
+    |. spaces 
+    |= float
+  , succeed Repeat 
+    |. token "Repeat" 
+    |. spaces
+    |= int
+    |. spaces
+    |= lazy (\_ -> listInst )
+  ]
+
+listInst : Parser (List Instruction) 
+listInst =
+  Parser.sequence
+    { start = "["
+    , separator = ","
+    , end = "]"
+    , spaces = spaces
+    , item =  inst
+    , trailing = Optional
+    }
+
+--variable pour tester le parser
+--my_test = Parser.run listInst"[Repeat 8 [Left 45, Repeat 6 [Repeat 90 [Forward 1, Left 2], Left 90]]]"
+
+-------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+-------------------------------------------------------------------------------------------------------------------------
+--la varaible de type instruction que je met en entré dans le programme pour tester la partie Dessin 
+my_instruction = [Repeat 8 [Left 45, Repeat 6 [Repeat 90 [Forward 1, Left 2], Left 90]]]
+-------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+-------------------------------------------------------------------------------------------------------------------------
 -- MAIN
 
 
 main =
-
+  
+  --initilise init et update et affiche mes view 
   Browser.sandbox { init = init, update = update, view = view }
+
+
 -- MODEL
 
+--on a 2 models text_input qui acceuillera les instructions donné par l'utilisateur
+-- et list_instruction qui sera utliser par viewSVG pour traiter et afficher une image SVG des instructions
 type alias Model =
   { text_input : String
   , list_instruction : List(Instruction)
   }
 
-
+-- initialement mes variable text_input et list_instruction sont vide
 init : Model 
 init =
   Model "" []
@@ -153,8 +175,7 @@ init =
 
 -- UPDATE
 
-
-
+-- la partie update permet d'actualiser les variables  text_input et list_instruction avec l'interaction de l'utilisateur
 type Msg
   = Text_input String
   | Submit
@@ -173,25 +194,22 @@ update msg model =
 
 -- VIEW
 
-
+-- views est le result qui sera envoyé dans le browsers 
 view : Model  -> Html Msg
 view model =
   div []
     [ viewInput "text" "Inserer des instructions" model.text_input Text_input
     , button [ onClick Submit ] [ Html.text "valider" ]
     , viewSVG model
-    --, svg [Html.Attributes.width 300, Html.Attributes.height 300, viewBox "-200 -200 300 300"] (pixels model)
+    , div [] [Html.text (Debug.toString (Parser.run listInst model.text_input))]
     ]
 
-
+-- permet d'afficher l'input et prendre la valeur de l'input et le mettre dans model.text_input
 viewInput : String -> String -> String -> (String -> msg) -> Html msg
 viewInput t p v toMsg =
   input [ Html.Attributes.type_ t, placeholder p, value v, onInput toMsg ] []
 
-        
-
-
-
+-- permet d'executer toute les fonction pour transformer une instruction en message svg puis affiche le dessin svg  
 viewSVG : Model -> Html msg
 viewSVG model =
   let
@@ -200,6 +218,19 @@ viewSVG model =
   in
   svg [ Svg.Attributes.width "500", Svg.Attributes.height "500", viewBox "-250 -250 500 500"] (message) 
 
+-------------------------------------------------------------------------------------------------------------------------
 
 
-pixels model = message_svg (List.reverse(convert_List_Coordline (List.reverse(transformer my_instruction [] 0)) (0.0,0.0) [] )) []
+
+
+-- au besoin  on peut tester la partie dessin SVG
+{-
+--j'affiche dans le main le dessin svg
+main = 
+  svg
+    [ width "500"
+    , height "500"
+    , viewBox "-250 -250 500 500"
+    ] 
+  (message_svg (List.reverse(convert_List_Coordline (List.reverse(transformer my_instruction [] 0)) (0.0,0.0) [] )) []) 
+-}   
