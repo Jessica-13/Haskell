@@ -131,6 +131,8 @@ listInst =
 --variable pour tester le parser
 --my_test = Parser.run listInst"[Repeat 8 [Left 45, Repeat 6 [Repeat 90 [Forward 1, Left 2], Left 90]]]"
 
+
+
 -------------------------------------------------------------------------------------------------------------------------
 
 
@@ -138,7 +140,7 @@ listInst =
 
 -------------------------------------------------------------------------------------------------------------------------
 --la varaible de type instruction que je met en entré dans le programme pour tester la partie Dessin 
-my_instruction = [Repeat 8 [Left 45, Repeat 6 [Repeat 90 [Forward 1, Left 2], Left 90]]]
+--my_instruction = [Repeat 8 [Left 45, Repeat 6 [Repeat 90 [Forward 1, Left 2], Left 90]]]
 -------------------------------------------------------------------------------------------------------------------------
 
 
@@ -157,17 +159,19 @@ main =
 
 -- MODEL
 
---on a 2 models text_input qui acceuillera les instructions donné par l'utilisateur
--- et list_instruction qui sera utliser par viewSVG pour traiter et afficher une image SVG des instructions
+-- on a 2 models text_input qui acceuillera les instructions donné par l'utilisateur
+-- et block un parser(List Instruction) qui sera utliser par viewSVG pour traiter et afficher une image SVG des instructions
 type alias Model =
   { text_input : String
-  , list_instruction : List(Instruction)
+  , block : Result (List DeadEnd) (List Instruction)
   }
 
--- initialement mes variable text_input et list_instruction sont vide
+-- initialement mes variable text_input est vide et block affiche une err
 init : Model 
 init =
-  Model "" []
+    { text_input = ""
+    , block = Err []
+    }
 
 
 
@@ -188,7 +192,7 @@ update msg model =
       { model | text_input = text_input }
 
     Submit ->
-      { model | list_instruction = my_instruction }
+      { model | block = Parser.run listInst model.text_input }
 
 
 
@@ -209,28 +213,35 @@ viewInput : String -> String -> String -> (String -> msg) -> Html msg
 viewInput t p v toMsg =
   input [ Html.Attributes.type_ t, placeholder p, value v, onInput toMsg ] []
 
--- permet d'executer toute les fonction pour transformer une instruction en message svg puis affiche le dessin svg  
+
+
+-- permet d'executer toute les fonction pour transformer une instruction en message svg puis affiche le dessin svg
+-- on doit d'abord regler tous les cas d'err   
 viewSVG : Model -> Html msg
+viewSVG model = 
+  let
+    instruc = 
+      case model.block of
+        Err [] -> []
+
+        Err deadEnd -> []
+
+        Ok block -> block
+  in 
+
+    svg [ Svg.Attributes.width "500", Svg.Attributes.height "500", viewBox "-250 -250 500 500"] (message_svg (List.reverse(convert_List_Coordline (List.reverse(transformer instruc [] 0)) (0.0,0.0) [] )) [])
+
+
+
+-------------------------------------------------------------------------------------------------------------------------
+
+
+-- au besoin  on peut tester la partie dessin SVG
+{-viewSVG : Model -> Html msg
 viewSVG model =
   let
     (message) = (message_svg (List.reverse(convert_List_Coordline (List.reverse(transformer model.list_instruction [] 0)) (0.0,0.0) [] )) [])
 
   in
-  svg [ Svg.Attributes.width "500", Svg.Attributes.height "500", viewBox "-250 -250 500 500"] (message) 
+  svg [ Svg.Attributes.width "500", Svg.Attributes.height "500", viewBox "-250 -250 500 500"] (message) -}
 
--------------------------------------------------------------------------------------------------------------------------
-
-
-
-
--- au besoin  on peut tester la partie dessin SVG
-{-
---j'affiche dans le main le dessin svg
-main = 
-  svg
-    [ width "500"
-    , height "500"
-    , viewBox "-250 -250 500 500"
-    ] 
-  (message_svg (List.reverse(convert_List_Coordline (List.reverse(transformer my_instruction [] 0)) (0.0,0.0) [] )) []) 
--}   
