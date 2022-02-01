@@ -205,7 +205,7 @@ view model =
     [ viewInput "text" "Inserer des instructions" model.text_input Text_input
     , button [ onClick Submit ] [ Html.text "valider" ]
     , viewSVG model
-    , div [] [Html.text (Debug.toString (Parser.run listInst model.text_input))]
+--    , div [] [Html.text (Debug.toString (Parser.run listInst model.text_input))]
     ]
 
 -- permet d'afficher l'input et prendre la valeur de l'input et le mettre dans model.text_input
