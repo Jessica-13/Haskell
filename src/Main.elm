@@ -202,8 +202,8 @@ update msg model =
 view : Model  -> Html Msg
 view model =
   div []
-    [ viewInput "text" "Inserer des instructions" model.text_input Text_input
-    , button [ onClick Submit ] [ Html.text "valider" ]
+    [ viewInput "text" "Please write here" model.text_input Text_input
+    , button [ onClick Submit ] [ Html.text "Submit" ]
     , viewSVG model
 --    , div [] [Html.text (Debug.toString (Parser.run listInst model.text_input))]
     ]

@@ -6436,7 +6436,7 @@ var $author$project$Main$view = function (model) {
 		_List_Nil,
 		_List_fromArray(
 			[
-				A4($author$project$Main$viewInput, 'text', 'Inserer des instructions', model.F, $author$project$Main$Text_input),
+				A4($author$project$Main$viewInput, 'text', 'Please write here', model.F, $author$project$Main$Text_input),
 				A2(
 				$elm$html$Html$button,
 				_List_fromArray(
@@ -6445,7 +6445,7 @@ var $author$project$Main$view = function (model) {
 					]),
 				_List_fromArray(
 					[
-						$elm$html$Html$text('valider')
+						$elm$html$Html$text('Submit')
 					])),
 				$author$project$Main$viewSVG(model)
 			]));
